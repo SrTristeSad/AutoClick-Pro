@@ -1,4 +1,11 @@
-__pycache__/
-*.pyc
-temp_memory.json
-*.json
+# Rust build artifacts
+/target/
+**/*.pdb
+*.exe
+*.msi
+# IDE / local state
+.vscode/
+.idea/
+*.swp
+# Perfis e logs locais
+*.log

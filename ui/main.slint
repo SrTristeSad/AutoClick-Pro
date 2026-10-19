@@ -1,0 +1,189 @@
+import { Button, LineEdit, ListView } from "std-widgets.slint";
+
+export struct ActionRow {
+    number: string,
+    action: string,
+    location: string,
+    waiting: string,
+}
+
+export component AppWindow inherits Window {
+    title: "AutoClick Pro | Rust + Slint";
+    preferred-width: 1020px;
+    preferred-height: 650px;
+    min-width: 860px;
+    min-height: 540px;
+    background: #0c1320;
+
+    in-out property <[ActionRow]> rows: [];
+    in-out property <int> selected-index: -1;
+    in-out property <bool> running: false;
+    in-out property <bool> targets-visible: true;
+    in-out property <string> status: "Pronto para configurar.";
+    in-out property <string> cycles-text: "0";
+    in-out property <string> x-text: "400";
+    in-out property <string> y-text: "300";
+    in-out property <string> x2-text: "600";
+    in-out property <string> y2-text: "300";
+    in-out property <string> delay-text: "200";
+    in-out property <string> duration-text: "500";
+
+    callback add-click();
+    callback add-double-click();
+    callback add-drag();
+    callback select-step(int);
+    callback update-selected();
+    callback remove-selected();
+    callback capture-start();
+    callback capture-end();
+    callback play-toggle();
+    callback save-profile();
+    callback load-profile();
+    callback toggle-targets();
+    callback move-selected(int);
+    callback import-profile();
+    callback export-profile();
+
+    VerticalLayout {
+        padding: 18px;
+        spacing: 14px;
+
+        Rectangle {
+            height: 72px;
+            background: #172338;
+            border-radius: 12px;
+            HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 20px;
+                spacing: 12px;
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 2px;
+                    Text { text: "AUTOCLICK PRO"; font-size: 24px; font-weight: 800; color: #f2f6ff; }
+                    Text { text: "Motor nativo Rust  •  Interface Slint"; font-size: 12px; color: #8ea7ca; }
+                }
+                Rectangle { horizontal-stretch: 1; background: transparent; }
+                Button { text: root.running ? "PARAR  (F5)" : "INICIAR  (F5)"; clicked => { root.play-toggle(); } }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 14px;
+            Rectangle {
+                width: 236px;
+                background: #172338;
+                border-radius: 12px;
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 12px;
+                    Text { text: "CRIAR AÇÕES"; font-size: 14px; color: #8ea7ca; font-weight: 700; }
+                    Button { text: "+ Clique esquerdo"; clicked => { root.add-click(); } }
+                    Button { text: "+ Clique duplo"; clicked => { root.add-double-click(); } }
+                    Button { text: "+ Arrastar mouse"; clicked => { root.add-drag(); } }
+                    Button { text: root.targets-visible ? "Ocultar miras (F6)" : "Mostrar miras (F6)"; enabled: !root.running; clicked => { root.toggle-targets(); } }
+                    Text { text: "Azul: clique  •  Verde: início  •  Vermelho: fim"; font-size: 11px; color: #86a0c5; wrap: word-wrap; }
+                    Rectangle { height: 1px; background: #31425c; }
+                    Text { text: "REPETIÇÃO"; font-size: 14px; color: #8ea7ca; font-weight: 700; }
+                    Text { text: "Ciclos  (0 = infinito)"; font-size: 12px; color: #d6e2f7; }
+                    LineEdit { text <=> root.cycles-text; }
+                    Rectangle { height: 1px; background: #31425c; }
+                    Button { text: "Salvar perfil"; clicked => { root.save-profile(); } }
+                    Button { text: "Carregar perfil"; clicked => { root.load-profile(); } }
+                    Button { text: "Importar JSON..."; enabled: !root.running; clicked => { root.import-profile(); } }
+                    Button { text: "Exportar JSON..."; enabled: !root.running; clicked => { root.export-profile(); } }
+                    Rectangle { vertical-stretch: 1; background: transparent; }
+                    Text { text: "F5  iniciar/parar\nF6  mostrar/ocultar miras\nF8  capturar origem\nF9  capturar destino\nESC parada de emergência"; font-size: 12px; color: #86a0c5; }
+                }
+            }
+
+            Rectangle {
+                background: #172338;
+                border-radius: 12px;
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 9px;
+                    Text { text: "SEQUÊNCIA DE AÇÕES"; color: #f2f6ff; font-size: 15px; font-weight: 700; }
+                    Text { text: "Arraste a mira na tela ou selecione uma ação para editar."; color: #8ea7ca; font-size: 12px; }
+                    Rectangle { height: 1px; background: #31425c; }
+                    ListView {
+                        for step[i] in root.rows : Rectangle {
+                            height: 61px;
+                            width: parent.width;
+                            background: root.selected-index == i ? #294466 : #1e2d43;
+                            border-radius: 7px;
+                            HorizontalLayout {
+                                padding-left: 10px;
+                                padding-right: 10px;
+                                spacing: 9px;
+                                Rectangle {
+                                    width: 31px;
+                                    height: 31px;
+                                    border-radius: 16px;
+                                    background: #157bb4;
+                                    Text { text: step.number; color: white; horizontal-alignment: center; vertical-alignment: center; font-size: 13px; font-weight: 700; }
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    spacing: 2px;
+                                    Text { text: step.action; color: #f2f6ff; font-size: 14px; font-weight: 700; }
+                                    Text { text: step.location + "  •  espera " + step.waiting; color: #9fb5d3; font-size: 12px; }
+                                }
+                            }
+                            TouchArea { clicked => { root.select-step(i); } }
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                width: 255px;
+                background: #172338;
+                border-radius: 12px;
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 9px;
+                    Text { text: "EDITAR ALVO"; color: #f2f6ff; font-size: 15px; font-weight: 700; }
+                    Text { text: root.selected-index < 0 ? "Selecione um item na lista." : "Alvo #" + (root.selected-index + 1); color: #8ea7ca; font-size: 12px; }
+                    Text { text: "Coordenada X"; color: #e0e9f7; font-size: 12px; }
+                    LineEdit { text <=> root.x-text; }
+                    Text { text: "Coordenada Y"; color: #e0e9f7; font-size: 12px; }
+                    LineEdit { text <=> root.y-text; }
+                    Button { text: "Capturar posição (F8)"; clicked => { root.capture-start(); } }
+                    Text { text: "Destino X e Y (arrastar)"; color: #e0e9f7; font-size: 12px; }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        LineEdit { text <=> root.x2-text; }
+                        LineEdit { text <=> root.y2-text; }
+                    }
+                    Button { text: "Capturar destino (F9)"; clicked => { root.capture-end(); } }
+                    Text { text: "Espera (ms)"; color: #e0e9f7; font-size: 12px; }
+                    LineEdit { text <=> root.delay-text; }
+                    Text { text: "Duração do arrasto (ms)"; color: #e0e9f7; font-size: 12px; }
+                    LineEdit { text <=> root.duration-text; }
+                    Button { text: "Aplicar alterações"; enabled: root.selected-index >= 0 && !root.running; clicked => { root.update-selected(); } }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Button { text: "↑ Subir"; enabled: root.selected-index > 0 && !root.running; clicked => { root.move-selected(-1); } }
+                        Button { text: "↓ Descer"; enabled: root.selected-index >= 0 && root.selected-index < root.rows.length - 1 && !root.running; clicked => { root.move-selected(1); } }
+                    }
+                    Button { text: "Remover selecionado"; enabled: root.selected-index >= 0 && !root.running; clicked => { root.remove-selected(); } }
+                    Rectangle { vertical-stretch: 1; background: transparent; }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 45px;
+            background: #172338;
+            border-radius: 10px;
+            HorizontalLayout {
+                padding-left: 14px;
+                padding-right: 14px;
+                alignment: start;
+                Text { text: root.running ? "● EXECUTANDO" : "● PRONTO"; width: 135px; color: root.running ? #47d9a6 : #8ea7ca; font-size: 12px; vertical-alignment: center; font-weight: 700; }
+                Text { text: root.status; color: #d6e2f7; font-size: 12px; vertical-alignment: center; overflow: elide; }
+            }
+        }
+    }
+}
