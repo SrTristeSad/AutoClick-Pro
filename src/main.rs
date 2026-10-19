@@ -351,6 +351,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 p.clone()
             };
             let _ = profile::save(&snapshot);
+            // Importante: escondemos as miras ANTES de iniciar a thread.
+            // Caso contrário o primeiro clique pode atingir a própria mira.
+            let previously_visible = overlays.borrow().is_visible();
+            overlays.borrow_mut().set_visible(false);
             let end_weak = weak.clone();
             let result = control.start(snapshot, move |outcome, interrupted| {
                 let _ = slint::invoke_from_event_loop(move || {
@@ -365,8 +369,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 });
             });
             match result {
-                Ok(()) => { overlays.borrow_mut().set_visible(false); ui.set_running(true); set_status(&ui, "Executando ações; miras ocultadas para não receber cliques."); }
-                Err(e) => set_status(&ui, e),
+                Ok(()) => {
+                    ui.set_running(true);
+                    set_status(&ui, "Executando ações; miras ocultadas para não receber cliques.");
+                }
+                Err(e) => {
+                    overlays.borrow_mut().set_visible(previously_visible);
+                    set_status(&ui, e);
+                }
             }
         });
     }

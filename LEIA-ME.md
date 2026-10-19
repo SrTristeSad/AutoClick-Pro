@@ -1,4 +1,4 @@
-# Notas técnicas da versão nativa 0.3
+# Notas técnicas da versão nativa 0.3.1
 
 - Windows 10/11 apenas; ainda sem build/teste real neste ambiente.
 - Macros de clique, duplo clique e arrasto, alvos arrastáveis, perfis JSON e atalhos globais.
@@ -7,3 +7,5 @@
 - Testar DPI, múltiplos monitores, comportamento ao fechar e janelas executadas como administrador.
 - Compilação: execute `build-windows.bat`, que roda `cargo test` e `cargo build --release`.
 - Código Python histórico: branch `python-legacy`; projeto original conserva `icone.ico`.
+
+- v0.3.1: motor só inicia após ocultar alvos, evitando a corrida com as janelas de mira.

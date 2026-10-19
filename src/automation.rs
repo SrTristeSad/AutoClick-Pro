@@ -22,13 +22,21 @@ impl Controller {
         self.stop.store(false, Ordering::SeqCst);
         let active = self.active.clone();
         let stop = self.stop.clone();
-        thread::spawn(move || {
+        match thread::Builder::new().name("autoclick-worker".into()).spawn(move || {
             let outcome = run_sequence(&profile, &stop);
             let interrupted = stop.load(Ordering::SeqCst);
             active.store(false, Ordering::SeqCst);
             callback(outcome, interrupted);
-        });
-        Ok(())
+        }) {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                // Não deixe o aplicativo preso em "executando" caso o SO
+                // recuse a criação da thread de automação.
+                self.active.store(false, Ordering::SeqCst);
+                self.stop.store(true, Ordering::SeqCst);
+                Err(format!("Não foi possível iniciar a automação: {error}"))
+            }
+        }
     }
 }
 
@@ -84,5 +92,24 @@ fn perform(step: &Step, stop: &AtomicBool) -> Result<(), String> {
             let released = windows::up();
             outcome.and(released)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn interruptible_wait_stops_immediately() {
+        let stop = AtomicBool::new(true);
+        assert!(!wait_interruptible(Duration::from_secs(30), &stop));
+    }
+
+    #[test]
+    fn empty_profile_cannot_activate_worker() {
+        let controller = Controller::default();
+        let result = controller.start(Profile::default(), |_, _| {});
+        assert!(result.is_err());
+        assert!(!controller.is_active());
     }
 }
